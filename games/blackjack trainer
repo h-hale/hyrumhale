@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bust Collector - Blackjack Dealer Trainer</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #0b5d1e;
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+.container {
+    max-width: 700px;
+    margin: auto;
+}
+
+.stats {
+    display: flex;
+    justify-content: space-around;
+    margin: 20px 0;
+    font-size: 1.2rem;
+    flex-wrap: wrap;
+}
+
+.cards {
+    min-height: 80px;
+    margin: 30px 0;
+}
+
+.card {
+    display: inline-block;
+    background: white;
+    color: black;
+    width: 60px;
+    height: 80px;
+    line-height: 80px;
+    font-size: 28px;
+    margin: 5px;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+input {
+    font-size: 2rem;
+    text-align: center;
+    width: 120px;
+    padding: 10px;
+}
+
+.message {
+    height: 40px;
+    margin: 20px;
+    font-size: 1.5rem;
+}
+
+.end-screen {
+    display: none;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1>🃏 Bust Collector</h1>
+<p>Enter the correct total. Every correct answer automatically deals another card.</p>
+
+<div class="stats">
+    <div>⏱ Time: <span id="time">60</span></div>
+    <div>💥 Busts: <span id="busts">0</span></div>
+    <div>🔥 Streak: <span id="streak">0</span></div>
+    <div>🎯 Accuracy: <span id="accuracy">100</span>%</div>
+</div>
+
+<div class="cards" id="cards"></div>
+
+<div>
+    <input id="answer" type="number" autocomplete="off" autofocus>
+</div>
+
+<div class="message" id="message"></div>
+
+<div class="stats">
+    <div>⭐ Score: <span id="score">0</span></div>
+</div>
+
+<div id="endScreen" class="end-screen">
+    <h2>Time's Up!</h2>
+
+    <p>💥 Busts: <span id="finalBusts"></span></p>
+    <p>⭐ Score: <span id="finalScore"></span></p>
+    <p>🎯 Accuracy: <span id="finalAccuracy"></span>%</p>
+    <p>🔥 Best Streak: <span id="finalStreak"></span></p>
+    <h3 id="rank"></h3>
+
+    <button onclick="location.reload()">Play Again</button>
+</div>
+
+</div>
+
+<script>
+const cardsDiv = document.getElementById("cards");
+const answerInput = document.getElementById("answer");
+const messageDiv = document.getElementById("message");
+
+const timeSpan = document.getElementById("time");
+const bustsSpan = document.getElementById("busts");
+const streakSpan = document.getElementById("streak");
+const accuracySpan = document.getElementById("accuracy");
+const scoreSpan = document.getElementById("score");
+
+let hand = [];
+let timeLeft = 60;
+
+let score = 0;
+let busts = 0;
+let streak = 0;
+let bestStreak = 0;
+
+let correctAnswers = 0;
+let totalAnswers = 0;
+
+const deck = [
+    {display:"A", value:11},
+    {display:"2", value:2},
+    {display:"3", value:3},
+    {display:"4", value:4},
+    {display:"5", value:5},
+    {display:"6", value:6},
+    {display:"7", value:7},
+    {display:"8", value:8},
+    {display:"9", value:9},
+    {display:"10", value:10},
+    {display:"J", value:10},
+    {display:"Q", value:10},
+    {display:"K", value:10}
+];
+
+function randomCard() {
+    return deck[Math.floor(Math.random() * deck.length)];
+}
+
+function startHand() {
+    hand = [randomCard(), randomCard()];
+    renderHand();
+}
+
+function renderHand() {
+    cardsDiv.innerHTML = "";
+
+    hand.forEach(card => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.textContent = card.display;
+        cardsDiv.appendChild(div);
+    });
+
+    answerInput.value = "";
+    answerInput.focus();
+}
+
+function handTotal() {
+
+    let total = hand.reduce((sum, card) => sum + card.value, 0);
+
+    let aces = hand.filter(card => card.display === "A").length;
+
+    while (total > 21 && aces > 0) {
+        total -= 10;
+        aces--;
+    }
+
+    return total;
+}
+
+function updateStats() {
+
+    bustsSpan.textContent = busts;
+    streakSpan.textContent = streak;
+    scoreSpan.textContent = score;
+
+    let acc = totalAnswers === 0
+        ? 100
+        : Math.round((correctAnswers / totalAnswers) * 100);
+
+    accuracySpan.textContent = acc;
+}
+
+function submitAnswer() {
+
+    if(timeLeft <= 0) return;
+
+    const userAnswer = parseInt(answerInput.value);
+
+    if(isNaN(userAnswer)) return;
+
+    totalAnswers++;
+
+    const actual = handTotal();
+
+    if(userAnswer === actual) {
+
+        correctAnswers++;
+        streak++;
+
+        if(streak > bestStreak)
+            bestStreak = streak;
+
+        score += 10;
+
+        if(actual > 21) {
+
+            busts++;
+            score += 100;
+
+            messageDiv.textContent = "💥 BUST!";
+            messageDiv.style.color = "gold";
+
+            startHand();
+
+        } else {
+
+            hand.push(randomCard());
+
+            renderHand();
+
+            messageDiv.textContent = "✅ Correct";
+            messageDiv.style.color = "lightgreen";
+        }
+
+    } else {
+
+        streak = 0;
+        score = Math.max(0, score - 25);
+
+        messageDiv.textContent =
+            `❌ Correct total was ${actual}`;
+
+        messageDiv.style.color = "#ff8080";
+    }
+
+    updateStats();
+}
+
+answerInput.addEventListener("keydown", e => {
+    if(e.key === "Enter") {
+        submitAnswer();
+    }
+});
+
+startHand();
+
+updateStats();
+
+const timer = setInterval(() => {
+
+    timeLeft--;
+
+    timeSpan.textContent = timeLeft;
+
+    if(timeLeft <= 0) {
+
+        clearInterval(timer);
+
+        answerInput.disabled = true;
+
+        document.getElementById("finalBusts").textContent = busts;
+        document.getElementById("finalScore").textContent = score;
+
+        let finalAccuracy = totalAnswers === 0
+            ? 100
+            : Math.round(
+                (correctAnswers / totalAnswers) * 100
+              );
+
+        document.getElementById("finalAccuracy")
+            .textContent = finalAccuracy;
+
+        document.getElementById("finalStreak")
+            .textContent = bestStreak;
+
+        let rank = "🃏 New Dealer";
+
+        if (busts >= 20)
+            rank = "👑 Blackjack Machine";
+        else if (busts >= 15)
+            rank = "🥇 Pit Boss";
+        else if (busts >= 10)
+            rank = "🥈 Casino Dealer";
+        else if (busts >= 5)
+            rank = "🥉 Home Game Pro";
+
+        document.getElementById("rank").textContent = rank;
+
+        document.getElementById("endScreen")
+            .style.display = "block";
+    }
+
+}, 1000);
+</script>
+
+</body>
+</html>
