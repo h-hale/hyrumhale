@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hi-Lo Count Trainer</title>
+
+<style>
+body{
+    background:#0b5d1e;
+    color:white;
+    font-family:Arial,sans-serif;
+    text-align:center;
+    margin:0;
+    padding:20px;
+}
+
+h1{
+    margin-bottom:10px;
+}
+
+.guide{
+    max-width:650px;
+    margin:20px auto;
+    padding:12px;
+    background:#134d24;
+    border-radius:10px;
+    font-size:18px;
+    line-height:1.5;
+}
+
+#level{
+    font-size:36px;
+    color:gold;
+    margin:25px 0;
+}
+
+.stats{
+    display:flex;
+    justify-content:center;
+    gap:40px;
+    flex-wrap:wrap;
+    margin:20px 0;
+    font-size:24px;
+}
+
+#card{
+    font-size:140px;
+    font-weight:bold;
+    margin:30px 0;
+    min-height:180px;
+}
+
+input{
+    font-size:40px;
+    width:160px;
+    text-align:center;
+    padding:10px;
+    border:none;
+    border-radius:10px;
+}
+
+#message{
+    margin-top:25px;
+    min-height:40px;
+    font-size:28px;
+}
+
+.streak-highlight{
+    color:#ffd700;
+}
+</style>
+</head>
+<body>
+
+<h1>🃏 Hi-Lo Count Trainer</h1>
+
+<div class="guide">
+    <strong>Hi-Lo Cheat Sheet</strong><br><br>
+
+    🟢 <strong>2 3 4 5 6</strong> = +1 &nbsp;&nbsp;
+    ⚪ <strong>7 8 9</strong> = 0 &nbsp;&nbsp;
+    🔴 <strong>10 J Q K A</strong> = -1
+
+    <br><br>
+
+    Start at <strong>0</strong>. When a card appears,
+    enter the <strong>new running count</strong> after
+    applying its value.
+</div>
+
+<div id="level">🏝️ Level 1 - Tourist</div>
+
+<div class="stats">
+    <div>🔥 Streak: <span id="streak">0</span></div>
+    <div>🏆 Best: <span id="best">0</span></div>
+</div>
+
+<div style="font-size:18px;margin-bottom:10px;">
+    🧠 Running Count: Keep It In Your Head
+</div>
+
+<div id="card">A</div>
+
+<input id="answer" type="number" autocomplete="off" autofocus>
+
+<div id="message"></div>
+
+<script>
+
+const cards = [
+    'A',
+    '2','3','4','5','6',
+    '7','8','9',
+    '10',
+    'J','Q','K'
+];
+
+let runningCount = 0;
+let streak = 0;
+let bestStreak = Number(localStorage.getItem('bestStreak')) || 0;
+
+const streakEl = document.getElementById('streak');
+const bestEl = document.getElementById('best');
+const levelEl = document.getElementById('level');
+const cardEl = document.getElementById('card');
+const messageEl = document.getElementById('message');
+const inputEl = document.getElementById('answer');
+
+bestEl.textContent = bestStreak;
+
+let currentCard = '';
+
+function cardValue(card){
+
+    if(['2','3','4','5','6'].includes(card))
+        return 1;
+
+    if(['10','J','Q','K','A'].includes(card))
+        return -1;
+
+    return 0;
+}
+
+function updateLevel(){
+
+    let level = 1;
+    let title = "🏝️ Tourist";
+
+    if(streak >= 1000){
+        level = 8;
+        title = "👑 Blackjack Machine";
+    }
+    else if(streak >= 500){
+        level = 7;
+        title = "😱 Pit Boss Nightmare";
+    }
+    else if(streak >= 200){
+        level = 6;
+        title = "💰 Advantage Player";
+    }
+    else if(streak >= 100){
+        level = 5;
+        title = "🃏 Counter";
+    }
+    else if(streak >= 50){
+        level = 4;
+        title = "👀 Floor Watcher";
+    }
+    else if(streak >= 25){
+        level = 3;
+        title = "🎲 Regular";
+    }
+    else if(streak >= 10){
+        level = 2;
+        title = "🍀 Casual Player";
+    }
+
+    levelEl.textContent = `Level ${level} - ${title}`;
+}
+
+function nextCard(){
+
+    currentCard =
+        cards[Math.floor(Math.random() * cards.length)];
+
+    cardEl.textContent = currentCard;
+
+    inputEl.value = '';
+    inputEl.focus();
+}
+
+function checkAnswer(){
+
+    const userInput = parseInt(inputEl.value);
+
+    if(isNaN(userInput))
+        return;
+
+    const correctCount =
+        runningCount + cardValue(currentCard);
+
+    if(userInput === correctCount){
+
+        runningCount = correctCount;
+
+        streak++;
+
+        if(streak > bestStreak){
+            bestStreak = streak;
+
+            localStorage.setItem(
+                "bestStreak",
+                bestStreak
+            );
+        }
+
+        messageEl.style.color = "#7CFC00";
+        messageEl.textContent = "✅ Correct";
+
+    }else{
+
+        messageEl.style.color = "#ff8080";
+        messageEl.textContent =
+            `❌ Correct count was ${correctCount}`;
+
+        runningCount = correctCount;
+        streak = 0;
+    }
+
+    streakEl.textContent = streak;
+    bestEl.textContent = bestStreak;
+
+    updateLevel();
+    nextCard();
+}
+
+inputEl.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){
+        checkAnswer();
+    }
+});
+
+updateLevel();
+nextCard();
+
+</script>
+
+</body>
+</html>
